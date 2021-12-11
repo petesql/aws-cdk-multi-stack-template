@@ -1,21 +1,49 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
-import * as cdk from '@aws-cdk/core';
-import { AwsCdkMultiStackTemplateStack } from '../lib/aws-cdk-multi-stack-template-stack';
+import { App, Construct } from '@aws-cdk/core';
+import { coreStack } from '../lib/index';
+import { ec2Stack } from '../lib/ec2-stack';
 
-const app = new cdk.App();
-new AwsCdkMultiStackTemplateStack(app, 'AwsCdkMultiStackTemplateStack', {
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
+interface EnvProps {
+  prod: boolean;
+}
 
-  /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
-  // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
+const stackProps = {
+  env: {
+      account: process.env.CDK_DEFAULT_ACCOUNT,
+      region: process.env.CDK_DEFAULT_REGION
+  }
+}
 
-  /* Uncomment the next line if you know exactly what Account and Region you
-   * want to deploy the stack to. */
-  // env: { account: '123456789012', region: 'us-east-1' },
+const app = new App();
 
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
-});
+class myApp extends Construct {
+  constructor(scope: Construct, id: string, props?: EnvProps) {
+      super(scope, id);
+      let az: string = 'eu-west-1';
+      let peerCidrIp: string = app.node.tryGetContext('peerIp');
+      let keyName: string = app.node.tryGetContext('keyName');
+      
+      if (peerCidrIp == null) {
+          console.log('"peerIp" context key missing, using hard-coded cidr...');
+          peerCidrIp = '10.10.10.0/24'
+          console.log('"peerIp" has been set to ' + peerCidrIp);
+      } else {
+          console.log('Default "peerIp" is set to ' + peerCidrIp);
+      }
+      
+      if (keyName == null) {
+          console.log('"keyName" context key missing, using hard-coded keyname...');
+          keyName = 'pw_key_pair'
+          console.log('"keyName" has been set to ' + keyName);
+          // can also use aws ec2-instance-connect send-ssh-public-key to provide SSH public key
+      } else {
+          console.log('Default "keyName" is set to ' + keyName);
+      }
+      
+      new coreStack(app, 'core-stack', stackProps); // vpc init
+      new ec2Stack(app, 'ec2-stack', peerCidrIp, keyName, az, stackProps);
+}}
+new myApp(app, "myapp");
+
+app.synth();
