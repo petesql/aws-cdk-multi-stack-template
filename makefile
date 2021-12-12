@@ -7,7 +7,7 @@ synth:
 synth-core:
 	cdk synth core-stack
 synth-iam:
-	cdk synth-iam
+	cdk synth iam-stack
 synth-ec2:
 	cdk synth ec2-stack
 diff:

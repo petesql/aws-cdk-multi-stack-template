@@ -3,6 +3,7 @@ import 'source-map-support/register';
 import { App, Construct } from '@aws-cdk/core';
 import { coreStack } from '../lib/index';
 import { ec2Stack } from '../lib/ec2-stack';
+import { iamStack } from '../lib/iam-stack';
 
 interface EnvProps {
   prod: boolean;
@@ -42,7 +43,8 @@ class myApp extends Construct {
       }
       
       new coreStack(app, 'core-stack', stackProps); // vpc init
-      new ec2Stack(app, 'ec2-stack', peerCidrIp, keyName, az, stackProps);
+      new ec2Stack(app, 'ec2-stack', peerCidrIp, keyName, stackProps);
+      new iamStack(app, 'iam-stack', stackProps);
 }}
 new myApp(app, "myapp");
 
